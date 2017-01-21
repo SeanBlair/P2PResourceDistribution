@@ -13,9 +13,11 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"log"
+	// "net"
 	"net/rpc"
 	"os"
+	// "strconv"
 	// TODO
 )
 
@@ -51,6 +53,27 @@ func main() {
 		fmt.Println("Usage: go run peer.go [numPeers] [peerID] [peersFile] [server ip:port]")
 		return
 	}
+
+	// numPeers, err := strconv.Atoi(args[0])
+	// i, err := strconv.Atoi("-42")
+	// myID := args[1]
+	// peersFile := args[2]
+	serverAddress_Port := args[3]
+
+	// initStruct := Init{2, ""}
+
+	client, err := rpc.Dial("tcp", serverAddress_Port)
+
+
+	initArgs := Init{2, ""}
+
+	var reply int
+	err = client.Call("RServer.InitSession", initArgs, &reply)
+	if err != nil {
+		log.Fatal("RServer.InitSession:", err)
+	}
+	fmt.Println("Server responded with sessionID: ", reply)
+	// fmt.Printf("Arith: %d*%d=%d", args.A, args.B, reply)
 
 	// TODO
 }
