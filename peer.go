@@ -72,6 +72,15 @@ func main() {
 	}
 	fmt.Println("Server responded with sessionID: ", sessionID)
 
+	var resource Resource
+	resourceArgs := ResourceRequest{sessionID, ""}
+
+	err = client.Call("RServer.GetResource", resourceArgs, &resource)
+	if err != nil {
+		log.Fatal("RServer.InitSession:", err)
+	}
+	fmt.Println("Server responded with Resource: ", resource)	
+
 
 	// TODO
 }
