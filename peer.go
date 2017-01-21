@@ -17,7 +17,7 @@ import (
 	// "net"
 	"net/rpc"
 	"os"
-	// "strconv"
+	"strconv"
 	// TODO
 )
 
@@ -54,26 +54,24 @@ func main() {
 		return
 	}
 
-	// numPeers, err := strconv.Atoi(args[0])
-	// i, err := strconv.Atoi("-42")
+	numPeers, err := strconv.Atoi(args[0])
+	
 	// myID := args[1]
 	// peersFile := args[2]
 	serverAddress_Port := args[3]
 
-	// initStruct := Init{2, ""}
-
 	client, err := rpc.Dial("tcp", serverAddress_Port)
 
 
-	initArgs := Init{2, ""}
+	initArgs := Init{numPeers, ""}
 
-	var reply int
-	err = client.Call("RServer.InitSession", initArgs, &reply)
+	var sessionID int
+	err = client.Call("RServer.InitSession", initArgs, &sessionID)
 	if err != nil {
 		log.Fatal("RServer.InitSession:", err)
 	}
-	fmt.Println("Server responded with sessionID: ", reply)
-	// fmt.Printf("Arith: %d*%d=%d", args.A, args.B, reply)
+	fmt.Println("Server responded with sessionID: ", sessionID)
+
 
 	// TODO
 }
