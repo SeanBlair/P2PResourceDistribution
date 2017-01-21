@@ -24,6 +24,9 @@ import (
 // Resource server type.
 type RServer int
 
+// Peer server type
+type PeerServer int
+
 // Request that peer sends in call to RServer.InitSession
 // Return value is int
 type Init struct {
@@ -44,6 +47,15 @@ type Resource struct {
 	NumRemaining int
 }
 
+var (
+	numPeers int
+	// myID int
+	// peersFile string
+	serverIpPort string
+	sessionID int
+	resource Resource
+	err error
+)
 // Main workhorse method.
 func main() {
 	args := os.Args[1:]
@@ -54,33 +66,91 @@ func main() {
 		return
 	}
 
-	numPeers, err := strconv.Atoi(args[0])
-	
-	// myID := args[1]
+	numPeers, err = strconv.Atoi(args[0])
+	if err != nil {
+		log.Fatal("Something wrong with [numPeers] arg: ", err)
+	}
+	myID, err := strconv.Atoi(args[1])
+	if err != nil {
+		log.Fatal("Something wrong with [peerID] arg: ", err)
+	}
 	// peersFile := args[2]
-	serverAddress_Port := args[3]
+	serverIpPort = args[3]
 
-	client, err := rpc.Dial("tcp", serverAddress_Port)
+	if myID == 1 {
+		initSession()
+		GetResource()
+	} else {
+		listen()
+	}
+
+	// client, err := rpc.Dial("tcp", serverIpPort)
 
 
+	// initArgs := Init{numPeers, ""}
+
+	// err = client.Call("RServer.InitSession", initArgs, &sessionID)
+	// if err != nil {
+	// 	log.Fatal("RServer.InitSession:", err)
+	// }
+	// fmt.Println("Server responded with sessionID: ", sessionID)
+
+	// resourceArgs := ResourceRequest{sessionID, ""}
+
+	// err = client.Call("RServer.GetResource", resourceArgs, &resource)
+	// if err != nil {
+	// 	log.Fatal("RServer.InitSession:", err)
+	// }
+	// fmt.Println("Server responded with Resource: ", resource)
+	// fmt.Println("The Resource string is: ", resource.Resource)
+	// fmt.Println("The Resource PeerID is: ", resource.PeerID)	
+	// fmt.Println("The Resource NumRemaining is: ", resource.NumRemaining)
+
+	// TODO
+}
+
+// sets sessionID, or exits program if error
+func initSession() {	
+	client, err := rpc.Dial("tcp", serverIpPort)
+	if err != nil {
+		log.Fatal("rpc.Dial error: ", err)
+	}
 	initArgs := Init{numPeers, ""}
-
-	var sessionID int
 	err = client.Call("RServer.InitSession", initArgs, &sessionID)
 	if err != nil {
 		log.Fatal("RServer.InitSession:", err)
 	}
 	fmt.Println("Server responded with sessionID: ", sessionID)
+}
 
-	var resource Resource
+func listen() {
+	// should register its rpc's
+	// listen on given port for given myID
+	// serve...
+	fmt.Println("in listen() state....")
+	// infinite loop
+	for true {
+
+	}
+}
+
+func GetResource() {
+	client, err := rpc.Dial("tcp", serverIpPort)
+	if err != nil {
+		log.Fatal("rpc.Dial (in GetResource) error: ", err)
+	}
 	resourceArgs := ResourceRequest{sessionID, ""}
 
 	err = client.Call("RServer.GetResource", resourceArgs, &resource)
 	if err != nil {
 		log.Fatal("RServer.InitSession:", err)
 	}
-	fmt.Println("Server responded with Resource: ", resource)	
+	fmt.Println("Server responded with Resource: ", resource)
+	fmt.Println("The Resource string is: ", resource.Resource)
+	fmt.Println("The Resource PeerID is: ", resource.PeerID)	
+	fmt.Println("The Resource NumRemaining is: ", resource.NumRemaining)
 
+	// handle Resource
+	listen()
 
-	// TODO
 }
