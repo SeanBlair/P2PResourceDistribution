@@ -54,6 +54,10 @@ type HostRequest struct {
 	TheString string
 }
 
+type NextResourceRequest struct {
+	SessID int
+}
+
 // The Host rpc method
 // Prints arg to console
 func (t *PeerServer) Host(arg *HostRequest, success *bool) error {
@@ -65,6 +69,14 @@ func (t *PeerServer) Host(arg *HostRequest, success *bool) error {
 // TODO the Exit RPC
 
 // TODO the GetNextResource RPC
+
+func (t *PeerServer) GetNextResource(arg *NextResourceRequest, success *bool) error {
+	fmt.Println("Received this SessionID: ", arg.SessID, " to GetNextResource with")
+	sessionID = arg.SessID
+	getResource()
+	*success = true
+	return nil
+}
 
 var (
 	numPeers int
@@ -102,7 +114,7 @@ func main() {
 
 	if myID == 1 {
 		initSession()
-		GetResource()
+		getResource()
 	} else {
 		listen()
 	}
@@ -150,21 +162,31 @@ func listen() {
 	peerServer := new(PeerServer)
 	rpc.Register(peerServer)
 
-	// TODO need to change this to determine what to listen
-	// to depending on myID and peersFile
-	listener, err := net.Listen("tcp", "localhost:2222")
+	myAddress := peerAddresses[myID -1]
+
+	listener, err := net.Listen("tcp", myAddress)
 	if err != nil {
 		log.Fatal("Error in net.Listen() in listen(): ", err)
 	}
 
-	rpc.Accept(listener)
+	// rpc.Accept(listener)
 
+	for {
+    conn, err := listener.Accept()
+    if err != nil {
+      fmt.Println("Error in listener.Accept() in listen: ", err)
+    }
+
+    go rpc.ServeConn(conn)
+   }
+    fmt.Println("at end of listen() method")
+  
 }
 
-func GetResource() {
+func getResource() {
 	client, err := rpc.Dial("tcp", serverIpPort)
 	if err != nil {
-		log.Fatal("rpc.Dial (in GetResource) error: ", err)
+		log.Fatal("rpc.Dial (in getResource) error: ", err)
 	}
 	resourceArgs := ResourceRequest{sessionID, ""}
 
@@ -190,7 +212,53 @@ func GetResource() {
 		hostResource(resource.PeerID, resource.Resource)
 	}
 
+	if resource.NumRemaining > 0 {
+		nextPeerAddress := getNextPeerAddress()
+		go getNextResource(nextPeerAddress)
+		listen()
+	} else {
+		exitProgram()
+	}
+
 	fmt.Println("Bye, bye!!! :)")
+}
+
+// call ExitProgram RPC for all peers exept for me
+// then exits program (me)
+func exitProgram() {
+	fmt.Println("in exitProgram()..... (not implemented) ")
+}
+
+// returns peerAddress that follows the address corresponding to 
+// myID in peersFile
+func getNextPeerAddress() (string) {
+	if myID == len(peerAddresses) {
+		return peerAddresses[0]
+	} else {
+		return peerAddresses[myID]
+	}
+}
+
+// calls the PeerServer.GetNextAddress RPC with given IP:Port
+func getNextResource(peerAddress string) {
+	client, err := rpc.Dial("tcp", peerAddress)
+	if err != nil {
+		log.Fatal("rpc.Dial(tcp, ", peerAddress, ") failed in getNextResource(): ", err)
+	}
+
+	nextResourceRequest := NextResourceRequest{sessionID}
+	var successful bool
+	err = client.Call("PeerServer.GetNextResource", &nextResourceRequest, &successful)
+	if err != nil {
+		log.Fatal("client.Call(PeerServer.GetNextResource ...) failed in getNextResource() for peerAddress: ", peerAddress)
+	}
+
+	fmt.Println("Was my peer RPC (GetNextResource) successful?? Answer: ", successful)
+
+	err = client.Close()
+	if err != nil {
+		log.Fatal("Error while closing tcp connection in getNextResource", err)
+	}
 }
 
 // calls the PeerServer.Host RPC to the given peerID
@@ -210,6 +278,11 @@ func hostResource(peer int, resourceString string) {
 	if err != nil {
 		log.Fatal("client.Call(PeerServer.Host ...) failed in hostRequest() for peerID: ", peer, " and resource: ", resourceString)
 	}
-	fmt.Println("Was my peer RPC successful?? Answer: ", successful)
-	// TODO: close connection???	
+	fmt.Println("Was my peer RPC (Host) successful?? Answer: ", successful)
+
+// TODO: close connection???	
+	err = client.Close()
+	if err != nil {
+		log.Fatal("Error while closing tcp connection in hostResource", err)
+	}
 }
