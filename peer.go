@@ -14,7 +14,7 @@ package main
 import (
 	"fmt"
 	"log"
-	// "net"
+	"net"
 	"net/rpc"
 	"os"
 	"strconv"
@@ -23,9 +23,6 @@ import (
 
 // Resource server type.
 type RServer int
-
-// Peer server type
-type PeerServer int
 
 // Request that peer sends in call to RServer.InitSession
 // Return value is int
@@ -47,9 +44,28 @@ type Resource struct {
 	NumRemaining int
 }
 
+// Peer rpc stuffs
+
+// Peer server type
+type PeerServer int
+
+// The string that peer must host
+type HostRequest struct {
+	TheString string
+}
+
+// The Host rpc method
+func (t *PeerServer) Host(arg *HostRequest, success *bool) (error) {
+	fmt.Println("Received this string to Host: ", arg)
+	// TODO is this necessary??
+	*t = 12321
+	*success = true
+	return nil
+}
+
 var (
 	numPeers int
-	// myID int
+	myID int
 	// peersFile string
 	serverIpPort string
 	sessionID int
@@ -70,7 +86,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Something wrong with [numPeers] arg: ", err)
 	}
-	myID, err := strconv.Atoi(args[1])
+	myID, err = strconv.Atoi(args[1])
 	if err != nil {
 		log.Fatal("Something wrong with [peerID] arg: ", err)
 	}
@@ -84,33 +100,12 @@ func main() {
 		listen()
 	}
 
-	// client, err := rpc.Dial("tcp", serverIpPort)
-
-
-	// initArgs := Init{numPeers, ""}
-
-	// err = client.Call("RServer.InitSession", initArgs, &sessionID)
-	// if err != nil {
-	// 	log.Fatal("RServer.InitSession:", err)
-	// }
-	// fmt.Println("Server responded with sessionID: ", sessionID)
-
-	// resourceArgs := ResourceRequest{sessionID, ""}
-
-	// err = client.Call("RServer.GetResource", resourceArgs, &resource)
-	// if err != nil {
-	// 	log.Fatal("RServer.InitSession:", err)
-	// }
-	// fmt.Println("Server responded with Resource: ", resource)
-	// fmt.Println("The Resource string is: ", resource.Resource)
-	// fmt.Println("The Resource PeerID is: ", resource.PeerID)	
-	// fmt.Println("The Resource NumRemaining is: ", resource.NumRemaining)
-
 	// TODO
 }
 
 // sets sessionID, or exits program if error
-func initSession() {	
+func initSession() {
+	// TODO  add sleep for 2 seconds	
 	client, err := rpc.Dial("tcp", serverIpPort)
 	if err != nil {
 		log.Fatal("rpc.Dial error: ", err)
@@ -121,6 +116,7 @@ func initSession() {
 		log.Fatal("RServer.InitSession:", err)
 	}
 	fmt.Println("Server responded with sessionID: ", sessionID)
+	// TODO close??
 }
 
 func listen() {
@@ -128,10 +124,24 @@ func listen() {
 	// listen on given port for given myID
 	// serve...
 	fmt.Println("in listen() state....")
-	// infinite loop
-	for true {
 
-	}
+	peerServer := new(PeerServer)
+	rpc.Register(peerServer)
+
+	// TODO would need to change this to determine what to listen
+	// to depending on myID and peersFile
+	listener, err := net.Listen("tcp", "localhost:2222")
+  	if err != nil {
+    	log.Fatal("Error in net.Listen() in listen(): ", err)
+  	}
+
+  	rpc.Accept(listener)
+
+
+	// infinite loop
+	// for true {
+
+	// }
 }
 
 func GetResource() {
@@ -151,6 +161,28 @@ func GetResource() {
 	fmt.Println("The Resource NumRemaining is: ", resource.NumRemaining)
 
 	// handle Resource
-	listen()
+
+	// trying peer rpc..
+	client, err = rpc.Dial("tcp", "localhost:2222")
+	if err != nil {
+		log.Fatal("rpc.Dial(tcp, peer (localhost:2222) Error: ", err)
+	}
+
+	hostRequest := HostRequest{resource.Resource}
+	
+	var successful bool
+
+	err = client.Call("PeerServer.Host", &hostRequest, &successful)
+
+	if err != nil {
+		log.Fatal("client.Call(PeerServer.Host failed... : ", err)
+	}
+
+	fmt.Println("Was my peer RPC successful?? Answer: ", successful)
+
+	fmt.Println("Bye, bye!")
+
+
+	// listen()
 
 }
