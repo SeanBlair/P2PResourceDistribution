@@ -12,6 +12,7 @@ $ go run peer.go [numPeers] [peerID] [peersFile] [server ip:port]
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -68,10 +69,11 @@ func (t *PeerServer) Host(arg *HostRequest, success *bool) error {
 var (
 	numPeers int
 	myID     int
-	// peersFile string
+	peersFile string
 	serverIpPort string
 	sessionID    int
 	resource     Resource
+	peerAddresses []string
 	err          error
 )
 
@@ -93,8 +95,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Something wrong with [peerID] arg: ", err)
 	}
-	// peersFile := args[2]
+	peersFile = args[2]
 	serverIpPort = args[3]
+
+	setPeerAddresses()
 
 	if myID == 1 {
 		initSession()
@@ -103,6 +107,27 @@ func main() {
 		listen()
 	}
 
+}
+
+func setPeerAddresses() {
+	file, err := os.Open(peersFile)
+    if err != nil {
+        log.Fatal("Error while opening [peersFile]: ", err)
+    }
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+    for i := 0; scanner.Scan(); i++ {
+        fmt.Println("Line: ", i, " of peersFile contains: ", scanner.Text())
+        peerAddresses = append(peerAddresses, scanner.Text())
+
+    }
+
+    if err := scanner.Err(); err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println("The full contents of the peerAddresses slice is: ", peerAddresses)
 }
 
 // sets sessionID, or exits program if error
