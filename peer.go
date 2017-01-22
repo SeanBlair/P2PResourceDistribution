@@ -55,7 +55,7 @@ type HostRequest struct {
 
 // The Host rpc method
 // Prints arg to console
-func (t *PeerServer) Host(arg *HostRequest, success *bool) (error) {
+func (t *PeerServer) Host(arg *HostRequest, success *bool) error {
 	fmt.Println("Received this string to Host: ", arg.TheString)
 	*success = true
 	return nil
@@ -67,13 +67,14 @@ func (t *PeerServer) Host(arg *HostRequest, success *bool) (error) {
 
 var (
 	numPeers int
-	myID int
+	myID     int
 	// peersFile string
 	serverIpPort string
-	sessionID int
-	resource Resource
-	err error
+	sessionID    int
+	resource     Resource
+	err          error
 )
+
 // Main workhorse method.
 func main() {
 	args := os.Args[1:]
@@ -106,7 +107,7 @@ func main() {
 
 // sets sessionID, or exits program if error
 func initSession() {
-	// TODO  add sleep for 2 seconds!	
+	// TODO  add sleep for 2 seconds!
 	client, err := rpc.Dial("tcp", serverIpPort)
 	if err != nil {
 		log.Fatal("rpc.Dial error: ", err)
@@ -130,11 +131,11 @@ func listen() {
 	// TODO need to change this to determine what to listen
 	// to depending on myID and peersFile
 	listener, err := net.Listen("tcp", "localhost:2222")
-  	if err != nil {
-    	log.Fatal("Error in net.Listen() in listen(): ", err)
-  	}
+	if err != nil {
+		log.Fatal("Error in net.Listen() in listen(): ", err)
+	}
 
-  	rpc.Accept(listener)
+	rpc.Accept(listener)
 
 }
 
@@ -151,7 +152,7 @@ func GetResource() {
 	}
 	fmt.Println("Server responded with Resource: ", resource)
 	fmt.Println("The Resource string is: ", resource.Resource)
-	fmt.Println("The Resource PeerID is: ", resource.PeerID)	
+	fmt.Println("The Resource PeerID is: ", resource.PeerID)
 	fmt.Println("The Resource NumRemaining is: ", resource.NumRemaining)
 
 	// handle Resource
@@ -173,7 +174,6 @@ func GetResource() {
 	}
 	fmt.Println("Was my peer RPC successful?? Answer: ", successful)
 	fmt.Println("Bye, bye!")
-
 
 	// listen()
 
