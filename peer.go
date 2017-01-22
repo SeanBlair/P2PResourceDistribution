@@ -18,7 +18,6 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
-	// TODO
 )
 
 // Resource server type.
@@ -55,13 +54,16 @@ type HostRequest struct {
 }
 
 // The Host rpc method
+// Prints arg to console
 func (t *PeerServer) Host(arg *HostRequest, success *bool) (error) {
-	fmt.Println("Received this string to Host: ", arg)
-	// TODO is this necessary??
-	*t = 12321
+	fmt.Println("Received this string to Host: ", arg.TheString)
 	*success = true
 	return nil
 }
+
+// TODO the Exit RPC
+
+// TODO the GetNextResource RPC
 
 var (
 	numPeers int
@@ -100,12 +102,11 @@ func main() {
 		listen()
 	}
 
-	// TODO
 }
 
 // sets sessionID, or exits program if error
 func initSession() {
-	// TODO  add sleep for 2 seconds	
+	// TODO  add sleep for 2 seconds!	
 	client, err := rpc.Dial("tcp", serverIpPort)
 	if err != nil {
 		log.Fatal("rpc.Dial error: ", err)
@@ -120,15 +121,13 @@ func initSession() {
 }
 
 func listen() {
-	// should register its rpc's
 	// listen on given port for given myID
-	// serve...
 	fmt.Println("in listen() state....")
 
 	peerServer := new(PeerServer)
 	rpc.Register(peerServer)
 
-	// TODO would need to change this to determine what to listen
+	// TODO need to change this to determine what to listen
 	// to depending on myID and peersFile
 	listener, err := net.Listen("tcp", "localhost:2222")
   	if err != nil {
@@ -137,11 +136,6 @@ func listen() {
 
   	rpc.Accept(listener)
 
-
-	// infinite loop
-	// for true {
-
-	// }
 }
 
 func GetResource() {
@@ -162,24 +156,22 @@ func GetResource() {
 
 	// handle Resource
 
+	// if for myID, print to console, else call Host to appropriate address
+	// if last, call Exit to all but myself, then exit
+	// else delegate (call GetResource to next peer in line) and listen()
+
 	// trying peer rpc..
 	client, err = rpc.Dial("tcp", "localhost:2222")
 	if err != nil {
 		log.Fatal("rpc.Dial(tcp, peer (localhost:2222) Error: ", err)
 	}
-
 	hostRequest := HostRequest{resource.Resource}
-	
 	var successful bool
-
 	err = client.Call("PeerServer.Host", &hostRequest, &successful)
-
 	if err != nil {
 		log.Fatal("client.Call(PeerServer.Host failed... : ", err)
 	}
-
 	fmt.Println("Was my peer RPC successful?? Answer: ", successful)
-
 	fmt.Println("Bye, bye!")
 
 
