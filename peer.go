@@ -117,12 +117,9 @@ func setPeerAddresses() {
     defer file.Close()
 
     scanner := bufio.NewScanner(file)
-    for i := 0; scanner.Scan(); i++ {
-        fmt.Println("Line: ", i, " of peersFile contains: ", scanner.Text())
+    for scanner.Scan() {
         peerAddresses = append(peerAddresses, scanner.Text())
-
     }
-
     if err := scanner.Err(); err != nil {
         log.Fatal(err)
     }
@@ -182,24 +179,37 @@ func GetResource() {
 
 	// handle Resource
 
-	// if for myID, print to console, else call Host to appropriate address
+	//TODO	
 	// if last, call Exit to all but myself, then exit
 	// else delegate (call GetResource to next peer in line) and listen()
 
-	// trying peer rpc..
-	client, err = rpc.Dial("tcp", "localhost:2222")
-	if err != nil {
-		log.Fatal("rpc.Dial(tcp, peer (localhost:2222) Error: ", err)
+	// if for myID, print to console, else call Host to appropriate address
+	if resource.PeerID == myID {
+		fmt.Println(resource.Resource)
+	} else {
+		hostResource(resource.PeerID, resource.Resource)
 	}
-	hostRequest := HostRequest{resource.Resource}
+
+	fmt.Println("Bye, bye!!! :)")
+}
+
+// calls the PeerServer.Host RPC to the given peerID
+
+func hostResource(peer int, resourceString string) {
+	// peerAddresses represents a zero indexed array
+	address := peerAddresses[peer -1]
+
+	client, err := rpc.Dial("tcp", address)
+	if err != nil {
+		log.Fatal("rpc.Dial(tcp, ", address, ") failed in hostResource(): ", err)
+	}
+
+	hostRequest := HostRequest{resourceString}
 	var successful bool
 	err = client.Call("PeerServer.Host", &hostRequest, &successful)
 	if err != nil {
-		log.Fatal("client.Call(PeerServer.Host failed... : ", err)
+		log.Fatal("client.Call(PeerServer.Host ...) failed in hostRequest() for peerID: ", peer, " and resource: ", resourceString)
 	}
 	fmt.Println("Was my peer RPC successful?? Answer: ", successful)
-	fmt.Println("Bye, bye!")
-
-	// listen()
-
+	// TODO: close connection???	
 }
