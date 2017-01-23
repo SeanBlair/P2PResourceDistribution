@@ -118,6 +118,8 @@ func main() {
 	setPeerAddresses()
 
 	if myID == 1 {
+		// to satisfy the minumum time before all parts of the system are running
+		time.Sleep(2 * time.Second)
 		// set sessionID
 		initSession()
 		// getResource()
@@ -155,7 +157,6 @@ func setPeerAddresses() {
 
 // sets sessionID, or exits program if error
 func initSession() {
-	// TODO  add sleep for 2 seconds!
 	client, err := rpc.Dial("tcp", serverIpPort)
 	if err != nil {
 		log.Fatal("rpc.Dial error: ", err)
@@ -183,35 +184,28 @@ func listenState() {
 		log.Fatal("Error in net.Listen() in listenState(): ", err)
 	}
 
-	// this should block until some request arrives
-	// rpc.Accept(listener)
-
+	// blocks until a request arrives
 	conn, err := listener.Accept()
 	if err != nil {
 		fmt.Println("Error in listener.Accept() in listenState(): ", err)
 	}
 	rpc.ServeConn(conn)
 
-
-	// for {
- //    conn, err := listener.Accept()
- //    if err != nil {
- //      fmt.Println("Error in listener.Accept() in listen: ", err)
- //    }
-
- //    go rpc.ServeConn(conn)
- //   }
     fmt.Println("at end of listenState() method")
 
-    // TODO: should the connection be closed??
+    // TODO: should listener be closed??
+    // appears to be required with my implementation...
     listener.Close()
-    // conn.Close()
 
-    // TODO: make sure method returns after servicing 1 request.
+    // TODO: should the connection be closed??
+    // does not seem to make a difference...
+    conn.Close()
+
     return
 }
 
 func getResource() {
+
 	client, err := rpc.Dial("tcp", serverIpPort)
 	if err != nil {
 		log.Fatal("rpc.Dial (in getResource) error: ", err)
@@ -223,9 +217,6 @@ func getResource() {
 		log.Fatal("RServer.InitSession:", err)
 	}
 	fmt.Println("Server responded with Resource: ", resource)
-	// fmt.Println("The Resource string is: ", resource.Resource)
-	// fmt.Println("The Resource PeerID is: ", resource.PeerID)
-	// fmt.Println("The Resource NumRemaining is: ", resource.NumRemaining)
 
 	// handle Resource
 
@@ -252,7 +243,6 @@ func getResource() {
 		exitProgram()
 	}
 
-	// fmt.Println("Bye, bye!!! :)")
 	return
 }
 
