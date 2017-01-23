@@ -59,6 +59,10 @@ type NextResourceRequest struct {
 	SessID int
 }
 
+type ExitRequest struct {
+	Request bool
+}
+
 var (
 	numPeers int
 	myID     int
@@ -68,7 +72,8 @@ var (
 	resource     Resource
 	peerAddresses []string
 	err          error
-	listen bool
+	isListen bool
+	isExit bool
 )
 
 // The Host rpc method
@@ -81,13 +86,19 @@ func (t *PeerServer) Host(arg *HostRequest, success *bool) error {
 
 // TODO the Exit RPC
 
+func (t *PeerServer) ExitProgram(arg *ExitRequest, success *bool) error {
+	isExit = true
+	*success = true
+	return nil
+}
+
 // TODO the GetNextResource RPC
 
 func (t *PeerServer) GetNextResource(arg *NextResourceRequest, success *bool) error {
 	// fmt.Println("Received this SessionID: ", arg.SessID, " to GetNextResource with")
 	sessionID = arg.SessID
 	// getResource()
-	listen = false
+	isListen = false
 	*success = true
 	return nil
 }
@@ -117,22 +128,29 @@ func main() {
 
 	setPeerAddresses()
 
+	isExit = false
+
 	if myID == 1 {
 		// to satisfy the minumum time before all parts of the system are running
 		time.Sleep(2 * time.Second)
 		// set sessionID
 		initSession()
 		// getResource()
-		listen = false
+		isListen = false
 	} else {
-		listen = true
+		isListen = true
 	}
 
+	// main logic infinite loop
 	for true {
-		if listen {
-			listenState()
-		}else {
-			getResource()
+		if isExit {
+			os.Exit(0)
+		} else {	
+			if isListen {
+				listenState()
+			}else {
+				getResource()
+			}
 		}
 	}
 
@@ -222,7 +240,6 @@ func getResource() {
 	if err != nil {
 		log.Fatal("Error in call to client.Call(RServer.GetResource, ", resourceArgs, "...)", err)
 	}
-	fmt.Println("Server responded with Resource: ", resource)
 
 	err = client.Close()
 	if err != nil {
@@ -256,20 +273,42 @@ func getResource() {
 		nextPeerAddress := getNextPeerAddress()
 		getNextResource(nextPeerAddress)
 		// listen()
-		listen = true
+		isListen = true
 	} else {
-		exitProgram()
-		log.Fatal("Exiting program after call to exitProgram()...")
+		exitAllPeers()
+		log.Fatal("Exiting program after call to exitAllPeers()... Wut!!")
 	}
-
 	return
 }
 
 // call ExitProgram RPC for all peers exept for me
 // then exits program (me)
-func exitProgram() {
-	fmt.Println("in exitProgram()..... (not implemented) ")
-	log.Fatal("Exiting program in call to exitProgram()")
+func exitAllPeers() {
+	for i, address := range peerAddresses {
+		if i + 1 != myID {
+			exitProgram(address)
+		}
+	}
+	os.Exit(0)
+}
+
+func exitProgram(ipPort string) {
+	client, err := rpc.Dial("tcp", ipPort)
+	if err != nil {
+		log.Fatal("rpc.Dial(tcp, ", ipPort, ") failed in exitProgram(): ", err)
+	}
+
+	exitRequest := ExitRequest{true}
+	var successful bool
+	err = client.Call("PeerServer.ExitProgram", &exitRequest, &successful)
+	if err != nil {
+		log.Fatal("client.Call(PeerServer.ExitProgram ...) failed in exitProgram() for peerAddress: ", ipPort)
+	}
+
+	err = client.Close()
+	if err != nil {
+		log.Fatal("Error while closing tcp connection in getNextResource", err)
+	}
 	return
 }
 
