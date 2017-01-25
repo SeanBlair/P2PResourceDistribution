@@ -79,7 +79,7 @@ var (
 	// Addresses in given peersFile
 	peerAddresses []string
 	// For error checking
-	err           error
+	err error
 	// True if in Listen state, false if in GetResource state
 	isListen bool
 	// True if in Exit state, false otherwise
@@ -313,7 +313,7 @@ func getNextResource(peerAddress string) {
 	return
 }
 
-// Calls PeerServer.Host to peer with given peerID (peer) 
+// Calls PeerServer.Host to peer with given peerID (peer)
 func hostResource(peer int, resourceString string) {
 	address := peerAddresses[peer-1]
 	client, err := rpc.Dial("tcp", address)
