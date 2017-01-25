@@ -68,7 +68,7 @@ var (
 	numPeers int
 	// Unique peerID (1 <= x <= numPeers)
 	myID int
-	// Path to file containing all peer ip_port. Line i corresponds to peer with peerID i
+	// Path to file containing all peer ip_ports. Line i corresponds to peer with peerID i
 	peersFile string
 	// Ip_port of functional server
 	serverIpPort string
@@ -78,10 +78,11 @@ var (
 	resource Resource
 	// Addresses in given peersFile
 	peerAddresses []string
+	// For error checking
 	err           error
-	// true if in listen state, false otherwise
+	// True if in Listen state, false if in GetResource state
 	isListen bool
-	// true if in exit state, false otherwise
+	// True if in Exit state, false otherwise
 	isExit bool
 )
 
@@ -140,7 +141,7 @@ func main() {
 		initSession()
 		isListen = false
 	} else {
-		// All other peer are in listen (PeerServer) state
+		// All peers with peerID > 1 are in Listen (PeerServer) state
 		isListen = true
 	}
 
@@ -312,7 +313,7 @@ func getNextResource(peerAddress string) {
 	return
 }
 
-// Calls PeerServer.Host to peer with given peerID
+// Calls PeerServer.Host to peer with given peerID (peer) 
 func hostResource(peer int, resourceString string) {
 	address := peerAddresses[peer-1]
 	client, err := rpc.Dial("tcp", address)
